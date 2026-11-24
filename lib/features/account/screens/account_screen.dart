@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/widgets/user_avatar.dart';
+import '../controllers/avatar_controller.dart';
 import '../../../core/widgets/app_shell.dart' show roleLabel;
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/controllers/profile_providers.dart';
@@ -26,9 +28,30 @@ String _statusLabel(String status) {
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
 
+  Future<void> _pickAvatar(BuildContext context, WidgetRef ref) async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    await ref
+        .read(avatarControllerProvider.notifier)
+        .change(bytes: bytes, fileName: file.name);
+    if (!context.mounted) return;
+    final state = ref.read(avatarControllerProvider);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(state.hasError
+          ? avatarError(state.error!)
+          : 'Profile picture updated.'),
+    ));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentProfileProvider);
+    final avatarBusy = ref.watch(avatarControllerProvider).isLoading;
     // Watched only to keep the controller alive while it signs the user out.
     ref.watch(authControllerProvider);
 
@@ -47,10 +70,6 @@ class AccountScreen extends ConsumerWidget {
             return const Center(child: Text('Account not found.'));
           }
           final rating = ref.watch(userRatingProvider(profile.id)).value;
-          final initial = profile.fullName.isEmpty
-              ? '?'
-              : profile.fullName.characters.first.toUpperCase();
-
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -59,17 +78,35 @@ class AccountScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundColor: sunYellow,
-                        child: Text(
-                          initial,
-                          style: const TextStyle(
-                            color: deepGreen,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          UserAvatar(
+                            name: profile.fullName,
+                            avatarPath: profile.avatarPath,
+                            radius: 36,
                           ),
-                        ),
+                          Positioned(
+                            right: -10,
+                            bottom: -10,
+                            child: IconButton.filled(
+                              tooltip: 'Change profile picture',
+                              iconSize: 16,
+                              visualDensity: VisualDensity.compact,
+                              onPressed: avatarBusy
+                                  ? null
+                                  : () => _pickAvatar(context, ref),
+                              icon: avatarBusy
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.camera_alt),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(width: 16),
                       Expanded(

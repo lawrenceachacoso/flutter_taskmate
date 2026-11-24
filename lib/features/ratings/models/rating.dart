@@ -4,12 +4,14 @@ class UserRating {
   final String fullName;
   final double average;
   final int count;
+  final String? avatarPath;
 
   const UserRating({
     required this.id,
     required this.fullName,
     required this.average,
     required this.count,
+    this.avatarPath,
   });
 
   factory UserRating.fromMap(Map<String, dynamic> map) {
@@ -18,6 +20,7 @@ class UserRating {
       fullName: map['full_name'] as String,
       average: (map['rating_avg'] as num).toDouble(),
       count: map['rating_count'] as int,
+      avatarPath: map['avatar_path'] as String?,
     );
   }
 

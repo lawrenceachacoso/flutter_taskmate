@@ -4,27 +4,32 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/auth/controllers/profile_providers.dart';
 import '../theme/app_theme.dart';
+import 'user_avatar.dart';
 
 class _NavItem {
   final String label;
   final String path;
   final IconData icon;
+  final String? short;
 
-  const _NavItem(this.label, this.path, this.icon);
+  const _NavItem(this.label, this.path, this.icon, [this.short]);
+
+  /// Shorter text for the narrow phone bar.
+  String get mobileLabel => short ?? label;
 }
 
 const _userItems = [
   _NavItem('Home', '/home', Icons.home_outlined),
   _NavItem('Jobs', '/jobs', Icons.work_outline),
-  _NavItem('Applied jobs', '/applied', Icons.assignment_outlined),
+  _NavItem('Applied jobs', '/applied', Icons.assignment_outlined, 'Applied'),
   _NavItem('History', '/history', Icons.history),
   _NavItem('Account', '/account', Icons.person_outline),
 ];
 
 const _adminItems = [
-  _NavItem('Verifications', '/admin', Icons.verified_user_outlined),
-  _NavItem('Student requests', '/admin/students', Icons.school_outlined),
-  _NavItem('Jobs to review', '/admin/jobs', Icons.work_outline),
+  _NavItem('Verifications', '/admin', Icons.verified_user_outlined, 'Verify'),
+  _NavItem('Student requests', '/admin/students', Icons.school_outlined, 'Students'),
+  _NavItem('Jobs to review', '/admin/jobs', Icons.work_outline, 'Review'),
   _NavItem('Disputes', '/admin/disputes', Icons.gavel),
   _NavItem('Account', '/account', Icons.person_outline),
 ];
@@ -69,6 +74,7 @@ class AppShell extends ConsumerWidget {
               items: items,
               selected: selected,
               name: profile?.fullName ?? '',
+              avatarPath: profile?.avatarPath,
               role: profile == null ? '' : roleLabel(profile.role),
               onLogout: () =>
                   ref.read(authControllerProvider.notifier).signOut(),
@@ -81,20 +87,68 @@ class AppShell extends ConsumerWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        // No item is highlighted on pages like a job's details.
-        selectedIndex: selected < 0 ? 0 : selected,
-        indicatorColor: selected < 0 ? Colors.transparent : sunYellow,
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        onDestinationSelected: (i) => context.go(items[i].path),
-        destinations: [
-          for (final item in items)
-            NavigationDestination(
-              icon: Icon(item.icon),
-              label: item.label,
-              tooltip: item.label,
-            ),
-        ],
+      bottomNavigationBar: _BottomBar(items: items, selected: selected),
+    );
+  }
+}
+
+/// Phone navigation bar: every icon has its text, except the one you are on
+/// (it shows a yellow highlight instead).
+class _BottomBar extends StatelessWidget {
+  final List<_NavItem> items;
+  final int selected;
+
+  const _BottomBar({required this.items, required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: Tooltip(
+                    message: items[i].label,
+                    child: InkWell(
+                      onTap: () => context.go(items[i].path),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: i == selected
+                                  ? sunYellow
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              items[i].icon,
+                              color: i == selected ? deepGreen : grassGreen,
+                            ),
+                          ),
+                          if (i != selected)
+                            Text(
+                              items[i].mobileLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -105,6 +159,7 @@ class _Sidebar extends StatelessWidget {
   final int selected;
   final String name;
   final String role;
+  final String? avatarPath;
   final VoidCallback onLogout;
 
   const _Sidebar({
@@ -113,6 +168,7 @@ class _Sidebar extends StatelessWidget {
     required this.name,
     required this.role,
     required this.onLogout,
+    this.avatarPath,
   });
 
   @override
@@ -162,20 +218,28 @@ class _Sidebar extends StatelessWidget {
             const Divider(color: sunYellow, thickness: 2, height: 2),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    name.isEmpty ? '...' : name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                  UserAvatar(name: name, avatarPath: avatarPath, radius: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name.isEmpty ? '...' : name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          role,
+                          style: const TextStyle(color: sunYellow, fontSize: 12),
+                        ),
+                      ],
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    role,
-                    style: const TextStyle(color: sunYellow, fontSize: 12),
                   ),
                 ],
               ),

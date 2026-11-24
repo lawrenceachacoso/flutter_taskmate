@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_back_button.dart';
+import '../../../core/widgets/user_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/rating_controller.dart';
 
@@ -32,9 +33,26 @@ class UserProfileScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(u.fullName, style: text.headlineSmall),
-              const SizedBox(height: 4),
-              Text(u.label, style: text.titleMedium),
+              Row(
+                children: [
+                  UserAvatar(
+                    name: u.fullName,
+                    avatarPath: u.avatarPath,
+                    radius: 36,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(u.fullName, style: text.headlineSmall),
+                        const SizedBox(height: 4),
+                        Text(u.label, style: text.titleMedium),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const Divider(height: 32),
               Text('Ratings and comments', style: text.titleMedium),
               const SizedBox(height: 8),

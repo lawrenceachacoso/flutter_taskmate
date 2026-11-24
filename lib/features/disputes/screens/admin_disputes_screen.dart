@@ -6,6 +6,7 @@ import '../../jobs/models/job.dart';
 import '../controllers/dispute_controller.dart';
 import '../models/dispute.dart';
 import '../widgets/dispute_section.dart';
+import '../widgets/proof_input_dialog.dart' show ProofGallery;
 import '../widgets/text_input_dialog.dart';
 
 class AdminDisputesScreen extends ConsumerWidget {
@@ -95,7 +96,9 @@ class _DisputeCard extends ConsumerWidget {
             Text('Poster: ${dispute.posterName}'),
             const SizedBox(height: 8),
             Text('Worker says: ${dispute.details ?? '(no details)'}'),
+            ProofGallery(paths: dispute.workerProofPaths),
             Text('Poster proof: ${dispute.proof ?? 'none submitted'}'),
+            ProofGallery(paths: dispute.posterProofPaths),
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,

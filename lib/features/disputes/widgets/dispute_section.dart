@@ -5,12 +5,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../jobs/models/job.dart';
 import '../controllers/dispute_controller.dart';
 import '../models/dispute.dart';
-import 'text_input_dialog.dart';
+import '../../verification/controllers/id_photo_controller.dart'
+    show IdPhotoException;
+import 'proof_input_dialog.dart';
 
 /// How long after completion a worker may report non-payment.
 const reportWindowDays = 14;
 
 String disputeError(Object error) {
+  if (error is IdPhotoException) return error.message;
+  if (error is StorageException) return error.message;
   if (error is PostgrestException) {
     if (error.code == '23505') return 'You already reported this job.';
     return error.message;
@@ -85,19 +89,23 @@ class DisputeSection extends ConsumerWidget {
         onPressed: busy
             ? null
             : () async {
-                final details = await showDialog<String>(
+                final input = await showDialog<ProofInput>(
                   context: context,
-                  builder: (_) => const TextInputDialog(
+                  builder: (_) => const ProofInputDialog(
                     title: 'Report non-payment',
                     label: 'What happened? (optional)',
                     confirmLabel: 'Send report',
                   ),
                 );
-                if (details == null || !context.mounted) return;
+                if (input == null || !context.mounted) return;
                 await _run(
                   context,
                   ref,
-                  () => notifier.report(job.id, details.isEmpty ? null : details),
+                  () => notifier.report(
+                    job.id,
+                    input.text.isEmpty ? null : input.text,
+                    images: input.images,
+                  ),
                   'Report sent. An admin will review it.',
                 );
               },
@@ -117,7 +125,15 @@ class DisputeSection extends ConsumerWidget {
           Text('Non-payment report', style: text.titleMedium),
           Text(disputeStatusLabel(d.status)),
           if (d.details != null) Text('Worker: ${d.details}'),
+          if (d.workerProofPaths.isNotEmpty) ...[
+            const Text('Worker pictures:'),
+            ProofGallery(paths: d.workerProofPaths),
+          ],
           if (d.proof != null) Text('Poster proof: ${d.proof}'),
+          if (d.posterProofPaths.isNotEmpty) ...[
+            const Text('Poster pictures:'),
+            ProofGallery(paths: d.posterProofPaths),
+          ],
           if (d.adminNote != null) Text('Admin note: ${d.adminNote}'),
           if (isOwner && d.status == 'open')
             Padding(
@@ -126,20 +142,25 @@ class DisputeSection extends ConsumerWidget {
                 onPressed: busy
                     ? null
                     : () async {
-                        final proof = await showDialog<String>(
+                        final input = await showDialog<ProofInput>(
                           context: context,
-                          builder: (_) => const TextInputDialog(
+                          builder: (_) => const ProofInputDialog(
                             title: 'Submit proof of payment',
                             label: 'Receipt reference or what you can show',
                             confirmLabel: 'Submit proof',
-                            minLength: 5,
+                            requireEvidence: true,
                           ),
                         );
-                        if (proof == null || !context.mounted) return;
+                        if (input == null || !context.mounted) return;
                         await _run(
                           context,
                           ref,
-                          () => notifier.submitProof(job.id, d.id, proof),
+                          () => notifier.submitProof(
+                            job.id,
+                            d.id,
+                            input.text.isEmpty ? null : input.text,
+                            images: input.images,
+                          ),
                           'Proof submitted.',
                         );
                       },

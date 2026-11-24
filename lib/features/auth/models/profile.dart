@@ -5,6 +5,7 @@ class Profile {
   final String status;
   final String? idPhotoPath;
   final String? rejectionReason;
+  final String? avatarPath;
 
   const Profile({
     required this.id,
@@ -13,6 +14,7 @@ class Profile {
     required this.status,
     this.idPhotoPath,
     this.rejectionReason,
+    this.avatarPath,
   });
 
   factory Profile.fromMap(Map<String, dynamic> map) {
@@ -23,6 +25,7 @@ class Profile {
       status: map['status'] as String,
       idPhotoPath: map['id_photo_path'] as String?,
       rejectionReason: map['rejection_reason'] as String?,
+      avatarPath: map['avatar_path'] as String?,
     );
   }
 }
