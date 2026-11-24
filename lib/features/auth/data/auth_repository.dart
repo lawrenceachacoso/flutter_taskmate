@@ -14,11 +14,18 @@ class AuthRepository {
     required String password,
     required String fullName,
     required String role,
+    required String facebookUrl,
+    required String phone,
   }) {
     return _client.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': fullName, 'role': role},
+      data: {
+        'full_name': fullName,
+        'role': role,
+        'facebook_url': facebookUrl,
+        'phone': phone,
+      },
     );
   }
 
@@ -31,6 +38,10 @@ class AuthRepository {
       email: email,
       token: code,
     );
+  }
+
+  Future<void> resendSignupOtp(String email) {
+    return _client.auth.resend(type: OtpType.signup, email: email);
   }
 
   Future<AuthResponse> signIn({

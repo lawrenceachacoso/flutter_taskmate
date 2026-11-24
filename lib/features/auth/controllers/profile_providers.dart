@@ -9,7 +9,12 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 });
 
 final currentProfileProvider = FutureProvider<Profile?>((ref) async {
-  final user = ref.watch(authStateProvider).value?.session?.user;
+  // Watched so the profile reloads whenever someone logs in or out.
+  ref.watch(authStateProvider);
+
+  // Read the user straight from the client. A saved session is available
+  // right at app start, before the auth stream has delivered its first event.
+  final user = ref.read(authRepositoryProvider).currentUser;
   if (user == null) return null;
   return ref.watch(profileRepositoryProvider).fetchProfile(user.id);
 });

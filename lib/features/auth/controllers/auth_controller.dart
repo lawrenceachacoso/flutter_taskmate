@@ -23,6 +23,8 @@ class AuthController extends AsyncNotifier<void> {
     required String password,
     required String fullName,
     required String role,
+    required String facebookUrl,
+    required String phone,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -31,6 +33,8 @@ class AuthController extends AsyncNotifier<void> {
             password: password,
             fullName: fullName,
             role: role,
+            facebookUrl: facebookUrl,
+            phone: phone,
           );
     });
   }
@@ -47,6 +51,13 @@ class AuthController extends AsyncNotifier<void> {
     });
   }
 
+  Future<void> resendOtp(String email) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authRepositoryProvider).resendSignupOtp(email);
+    });
+  }
+
   Future<void> signOut() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -56,4 +67,5 @@ class AuthController extends AsyncNotifier<void> {
 }
 
 final authControllerProvider =
-    AsyncNotifierProvider<AuthController, void>(AuthController.new);
+    AsyncNotifierProvider.autoDispose<AuthController, void>(
+        AuthController.new);
